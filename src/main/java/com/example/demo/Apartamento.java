@@ -1,12 +1,29 @@
 package com.example.demo;
 import java.util.UUID;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "apartamentos")
 public class Apartamento {
 
+    @Id
+    @Column(name = "id")
     private String id;
+
+    @Column(name = "numero")
     private String numero;
+
+    @Column(name = "torre")
     private String torre;
+
+    @Column(name = "area")
     private double area;
+
+    @Column(name = "propietario_id")
     private String propietarioId;
 
     public Apartamento() {
