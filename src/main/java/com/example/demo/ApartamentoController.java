@@ -1,6 +1,7 @@
 package com.example.demo;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,11 +20,17 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import org.springframework.transaction.annotation.Transactional;
 @Tag(name = "Apartamentos", description = "API para la gestión de apartamentos")
 @RestController
 @RequestMapping("/api/apartamentos")
 public class ApartamentoController {
     private final ApartamentoService apartamentoService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public ApartamentoController(ApartamentoService apartamentoService) {
         this.apartamentoService = apartamentoService;
@@ -37,7 +44,10 @@ public class ApartamentoController {
         if (!"ADMIN".equalsIgnoreCase(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        return ResponseEntity.ok(apartamentoService.findAll());
+
+        List<Apartamento> apartamentos = entityManager.createQuery("SELECT a FROM Apartamento a", Apartamento.class).getResultList();
+        return ResponseEntity.ok(apartamentos);
+
     }
 
     @Operation(summary = "Consultar apartamento propio", description = "Busca y devuelve el apartamento asociado al ID del propietario enviado en la cabecera.")
@@ -52,7 +62,11 @@ public class ApartamentoController {
         if (propietarioId == null || propietarioId.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Apartamento apartamento = apartamentoService.findByPropietarioId(propietarioId);
+        List<Apartamento> resultados = entityManager.createQuery("SELECT a FROM Apartamento a WHERE a.propietarioId = :propietarioId", Apartamento.class)
+                .setParameter("propietarioId", propietarioId)
+                .setMaxResults(1)
+                .getResultList();
+        Apartamento apartamento = resultados.isEmpty() ? null : resultados.get(0);
         return apartamento == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(apartamento);
     }
 
@@ -62,12 +76,18 @@ public class ApartamentoController {
             @ApiResponse(responseCode = "403", description = "Acceso denegado si no es ADMIN")
     })
     @PostMapping
+    @Transactional
     public ResponseEntity<Apartamento> registrar(@RequestHeader(value = "X-User-Role", required = false) @Parameter(description = "Rol del usuario")String role,
                                                  @RequestBody @Parameter(description = "Datos del apartamento a registrar") Apartamento apartamento) {
         if (!"ADMIN".equalsIgnoreCase(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(apartamentoService.save(apartamento));
+
+        if (apartamento.getId() == null || apartamento.getId().isBlank()) {
+            apartamento.setId(UUID.randomUUID().toString());
+        }
+        entityManager.persist(apartamento);
+        return ResponseEntity.status(HttpStatus.CREATED).body(apartamento);
     }
 
     @Operation(summary = "Actualizar un apartamento", description = "Modifica los datos de un apartamento existente. Requiere rol de ADMIN.")
@@ -78,6 +98,7 @@ public class ApartamentoController {
     })
 
     @PutMapping("/{id}")
+    @Transactional
     public ResponseEntity<Apartamento> actualizar(
             @RequestHeader(value = "X-User-Role", required = false) @Parameter(description = "Rol del usuario") String role,
             @PathVariable @Parameter(description = "ID del apartamento a actualizar") String id,
@@ -85,7 +106,15 @@ public class ApartamentoController {
         if (!"ADMIN".equalsIgnoreCase(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        Apartamento actualizado = apartamentoService.update(id, apartamentoDetalles);
+        Apartamento existente = entityManager.find(Apartamento.class, id);
+        Apartamento actualizado = null;
+        if (existente != null) {
+            existente.setNumero(apartamentoDetalles.getNumero());
+            existente.setTorre(apartamentoDetalles.getTorre());
+            existente.setArea(apartamentoDetalles.getArea());
+            existente.setPropietarioId(apartamentoDetalles.getPropietarioId());
+            actualizado = entityManager.merge(existente);
+        }
         return actualizado != null ? ResponseEntity.ok(actualizado) : ResponseEntity.notFound().build();
     }
 
@@ -96,13 +125,20 @@ public class ApartamentoController {
             @ApiResponse(responseCode = "404", description = "Apartamento no encontrado")
     })
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> eliminar(
             @RequestHeader(value = "X-User-Role", required = false) @Parameter(description = "Rol del usuario") String role,
             @PathVariable @Parameter(description = "ID del apartamento a eliminar") String id) {
         if (!"ADMIN".equalsIgnoreCase(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        boolean eliminado = apartamentoService.deleteById(id);
+        Apartamento existente = entityManager.find(Apartamento.class, id);
+        boolean eliminado = false;
+        if (existente != null) {
+            entityManager.remove(existente);
+            eliminado = true;
+        }
         return eliminado ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
-}
+
+    }
