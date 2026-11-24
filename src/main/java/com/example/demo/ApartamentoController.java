@@ -83,9 +83,6 @@ public class ApartamentoController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        if (apartamento.getId() == null || apartamento.getId().isBlank()) {
-            apartamento.setId(UUID.randomUUID().toString());
-        }
         entityManager.persist(apartamento);
         return ResponseEntity.status(HttpStatus.CREATED).body(apartamento);
     }
@@ -101,7 +98,7 @@ public class ApartamentoController {
     @Transactional
     public ResponseEntity<Apartamento> actualizar(
             @RequestHeader(value = "X-User-Role", required = false) @Parameter(description = "Rol del usuario") String role,
-            @PathVariable @Parameter(description = "ID del apartamento a actualizar") String id,
+            @PathVariable @Parameter(description = "ID del apartamento a actualizar") Long id,
             @RequestBody @Parameter(description = "Nuevos datos del apartamento") Apartamento apartamentoDetalles) {
         if (!"ADMIN".equalsIgnoreCase(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -128,7 +125,7 @@ public class ApartamentoController {
     @Transactional
     public ResponseEntity<Void> eliminar(
             @RequestHeader(value = "X-User-Role", required = false) @Parameter(description = "Rol del usuario") String role,
-            @PathVariable @Parameter(description = "ID del apartamento a eliminar") String id) {
+            @PathVariable @Parameter(description = "ID del apartamento a eliminar") Long id) {
         if (!"ADMIN".equalsIgnoreCase(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }

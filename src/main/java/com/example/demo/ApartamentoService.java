@@ -11,8 +11,8 @@ public class ApartamentoService {
 
     public ApartamentoService(ApartamentoRepository apartamentoRepository) {
         this.apartamentoRepository = apartamentoRepository;
-        apartamentoRepository.save(new Apartamento("apt-001", "101", "A", 68.0, "prop-001"));
-        apartamentoRepository.save(new Apartamento("apt-002", "202", "B", 72.5, "prop-002"));
+        apartamentoRepository.save(new Apartamento(null, "101", "A", 68.0, "prop-001"));
+        apartamentoRepository.save(new Apartamento(null, "202", "B", 72.5, "prop-002"));
     }
 
     public List<Apartamento> findAll() {

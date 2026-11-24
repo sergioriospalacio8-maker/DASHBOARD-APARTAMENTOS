@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class ApartamentoRepository {
 
-    private final Map<String, Apartamento> apartamentos = new LinkedHashMap<>();
+    private final Map<Long, Apartamento> apartamentos = new LinkedHashMap<>();
 
     public Apartamento save(Apartamento apartamento) {
         apartamentos.put(apartamento.getId(), apartamento);

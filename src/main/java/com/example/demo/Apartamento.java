@@ -3,6 +3,8 @@ import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -11,8 +13,9 @@ import jakarta.persistence.Table;
 public class Apartamento {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private String id;
+    private Long id;
 
     @Column(name = "numero")
     private String numero;
@@ -21,16 +24,16 @@ public class Apartamento {
     private String torre;
 
     @Column(name = "area")
-    private double area;
+    private Double area;
 
     @Column(name = "propietario_id")
     private String propietarioId;
 
     public Apartamento() {
-        this.id = UUID.randomUUID().toString();
+
     }
 
-    public Apartamento(String id, String numero, String torre, double area, String propietarioId) {
+    public Apartamento(Long id, String numero, String torre, Double area, String propietarioId) {
         this.id = id;
         this.numero = numero;
         this.torre = torre;
@@ -38,14 +41,14 @@ public class Apartamento {
         this.propietarioId = propietarioId;
     }
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getNumero() { return numero; }
     public void setNumero(String numero) { this.numero = numero; }
     public String getTorre() { return torre; }
     public void setTorre(String torre) { this.torre = torre; }
-    public double getArea() { return area; }
-    public void setArea(double area) { this.area = area; }
+    public Double getArea() { return area; }
+    public void setArea(Double area) { this.area = area; }
     public String getPropietarioId() { return propietarioId; }
     public void setPropietarioId(String propietarioId) { this.propietarioId = propietarioId; }
 }
