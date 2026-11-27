@@ -1,0 +1,14 @@
+CREATE TABLE condominios (id BIGINT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(120) NOT NULL);
+CREATE TABLE torres (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(120) NOT NULL,
+    condominio_id BIGINT NOT NULL REFERENCES condominios(id)
+);
+CREATE TABLE apartamentos (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    numero VARCHAR(255),
+    torre VARCHAR(255),
+    area DOUBLE PRECISION,
+    propietario_id VARCHAR(255),
+    torre_id BIGINT REFERENCES torres(id) ON DELETE SET NULL
+);

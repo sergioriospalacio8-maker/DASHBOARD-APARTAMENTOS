@@ -1,5 +1,7 @@
 package com.example.demo;
-import java.util.UUID;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.DynamicUpdate;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,6 +12,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "apartamentos")
+@DynamicUpdate
 public class Apartamento {
 
     @Id
@@ -28,6 +31,10 @@ public class Apartamento {
 
     @Column(name = "propietario_id")
     private String propietarioId;
+
+    @JsonIgnore
+    @Column(name = "torre_id")
+    private Long torreId;
 
     public Apartamento() {
 
@@ -51,6 +58,8 @@ public class Apartamento {
     public void setArea(Double area) { this.area = area; }
     public String getPropietarioId() { return propietarioId; }
     public void setPropietarioId(String propietarioId) { this.propietarioId = propietarioId; }
+    public Long getTorreId() { return torreId; }
+    public void setTorreId(Long torreId) { this.torreId = torreId; }
 }
 
 
