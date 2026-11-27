@@ -3,6 +3,7 @@ package com.example.demo;
 import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,18 +23,22 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 @Tag(name = "Apartamentos", description = "API para la gestión de apartamentos")
 @RestController
 @RequestMapping("/api/apartamentos")
 public class ApartamentoController {
     private final ApartamentoService apartamentoService;
+    private final TransactionTemplate transaccionBorrado;
 
     @PersistenceContext
     private EntityManager entityManager;
 
-    public ApartamentoController(ApartamentoService apartamentoService) {
+    public ApartamentoController(ApartamentoService apartamentoService, PlatformTransactionManager transactionManager) {
         this.apartamentoService = apartamentoService;
+        this.transaccionBorrado = new TransactionTemplate(transactionManager);
     }
 
     @Operation(summary = "Listar todos los apartamentos", description = "Devuelve la lista completa de apartamentos. Requiere rol de ADMIN.")
@@ -119,23 +124,43 @@ public class ApartamentoController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Apartamento eliminado exitosamente"),
             @ApiResponse(responseCode = "403", description = "Acceso denegado si no es ADMIN"),
-            @ApiResponse(responseCode = "404", description = "Apartamento no encontrado")
+            @ApiResponse(responseCode = "404", description = "Apartamento no encontrado"),
+            @ApiResponse(responseCode = "409", description = "El apartamento tiene historial de ocupación")
     })
     @DeleteMapping("/{id}")
-    @Transactional
     public ResponseEntity<Void> eliminar(
             @RequestHeader(value = "X-User-Role", required = false) @Parameter(description = "Rol del usuario") String role,
             @PathVariable @Parameter(description = "ID del apartamento a eliminar") Long id) {
         if (!"ADMIN".equalsIgnoreCase(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        Apartamento existente = entityManager.find(Apartamento.class, id);
-        boolean eliminado = false;
-        if (existente != null) {
-            entityManager.remove(existente);
-            eliminado = true;
+        try {
+            // El DELETE puede fallar al confirmar, no al llamar a remove().
+            boolean eliminado = Boolean.TRUE.equals(transaccionBorrado.execute(estado -> {
+                Apartamento existente = entityManager.find(Apartamento.class, id);
+                if (existente == null) return false;
+                entityManager.remove(existente);
+                return true;
+            }));
+            return eliminado ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+        } catch (RuntimeException ex) {
+            if (conflictoConHistorial(ex)) return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            throw ex;
         }
-        return eliminado ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    private static boolean conflictoConHistorial(Throwable error) {
+        for (Throwable causa = error; causa != null; causa = causa.getCause()) {
+            if (causa instanceof ConstraintViolationException violacion
+                    && "fk_ocupaciones_apartamento".equalsIgnoreCase(violacion.getConstraintName())) {
+                String sqlState = violacion.getSQLState();
+                int codigo = violacion.getErrorCode();
+                // MySQL: fila padre referenciada (1451); H2: hay filas hijas (23503).
+                if ((codigo == 1451 && "23000".equals(sqlState))
+                        || (codigo == 23503 && "23503".equals(sqlState))) return true;
+            }
+        }
+        return false;
     }
 
     }
