@@ -2,22 +2,46 @@ package com.example.demo;
 
 import java.util.UUID;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "usuarios")
 public class Usuario {
 
+    @Id
+    @Column(name = "id", length = 255)
     private String id;
+
+    @Lob
+    @Column(name = "nombre")
     private String nombre;
+
+    @Lob
+    @Column(name = "email")
     private String email;
+
+    @Column(name = "edad", nullable = false)
     private int edad;
 
     public Usuario() {
-        this.id = UUID.randomUUID().toString();
+        ensureId();
     }
 
     public Usuario(String nombre, String email, int edad) {
-        this.id = UUID.randomUUID().toString();
+        this();
         this.nombre = nombre;
         this.email = email;
         this.edad = edad;
+    }
+
+    void ensureId() {
+        if (id == null) {
+            id = UUID.randomUUID().toString();
+        }
     }
 
     //Getters y Setters

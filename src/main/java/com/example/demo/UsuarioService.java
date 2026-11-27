@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UsuarioService {
@@ -13,25 +14,17 @@ public class UsuarioService {
     @Autowired
     public UsuarioService(UsuarioRepository usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
-
-        //Inicializamos algunos datos  de ejemplo
-        initSampleDate();
-    }
-
-    private void initSampleDate() {
-        save(new Usuario("Juan Perez", "juan@example.com", 30));
-        save(new Usuario("Maria Lopez", "maria@example.com", 25));
-        save(new Usuario("Carlos Ruiz", "carlos@example.com", 40));
     }
 
     // Crear un nuevo usuario
     public Usuario save(Usuario usuario) {
+        usuario.ensureId();
         return usuarioRepository.save(usuario);
     }
 
     // Obtener un usuario por ID
     public Usuario findeById(String id) {
-        return usuarioRepository.findById(id);
+        return usuarioRepository.findById(id).orElse(null);
     }
 
     //Listar todos los usuarios
@@ -41,17 +34,27 @@ public class UsuarioService {
 
     //Buscar por nombre
     public List<Usuario> findByNombre(String nombre) {
-        return usuarioRepository.findByNombreContaining(nombre);
+        return findAll().stream()
+                .filter(usuario -> usuario.getNombre().toLowerCase().contains(nombre.toLowerCase()))
+                .toList();
     }
 
     //Actualizar un usuario
-    public Usuario update(Usuario usuario) {
-        return usuarioRepository.update(usuario);
+    @Transactional
+    public Usuario update(String id, Usuario cambios) {
+        Usuario usuario = findeById(id);
+        if (usuario != null) {
+            usuario.setNombre(cambios.getNombre());
+            usuario.setEmail(cambios.getEmail());
+            usuario.setEdad(cambios.getEdad());
+        }
+        return usuario;
     }
 
     // Actualizacion parcial
+    @Transactional
     public Usuario patch(String id, Map<String, Object> updates) {
-        Usuario usuario = usuarioRepository.findById(id);
+        Usuario usuario = findeById(id);
         if (usuario != null) {
             updates.forEach((key, value) -> {
                 switch (key) {
@@ -64,13 +67,18 @@ public class UsuarioService {
                     }
                 }
             });
-            return usuarioRepository.update(usuario);
         }
-        return null;
+        return usuario;
     }
 
     // Eliminar un usuario
-    public void deleteById(String id) {
-        usuarioRepository.deleteById(id);
+    @Transactional
+    public boolean deleteById(String id) {
+        Usuario usuario = findeById(id);
+        if (usuario == null) {
+            return false;
+        }
+        usuarioRepository.delete(usuario);
+        return true;
     }
 }

@@ -64,10 +64,8 @@ public class UsuarioController {
     // Actualizar un usuario existente (reemplazo completo)
     @PutMapping("/{id}")
     public ResponseEntity<Usuario> updateUsuario(@PathVariable String id, @RequestBody Usuario usuario) {
-        Usuario existingUsuario = usuarioService.findeById(id);
-        if (existingUsuario != null) {
-            usuario.setId(id);
-            Usuario updatedUsuario = usuarioService.update(usuario);
+        Usuario updatedUsuario = usuarioService.update(id, usuario);
+        if (updatedUsuario != null) {
             return new ResponseEntity<>(updatedUsuario, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -86,9 +84,7 @@ public class UsuarioController {
     // Eliminar un usuario
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUsuario(@PathVariable String id) {
-        Usuario existingUsuario = usuarioService.findeById(id);
-        if (existingUsuario != null) {
-            usuarioService.deleteById(id);
+        if (usuarioService.deleteById(id)) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
