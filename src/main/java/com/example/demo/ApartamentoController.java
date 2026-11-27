@@ -125,7 +125,7 @@ public class ApartamentoController {
             @ApiResponse(responseCode = "204", description = "Apartamento eliminado exitosamente"),
             @ApiResponse(responseCode = "403", description = "Acceso denegado si no es ADMIN"),
             @ApiResponse(responseCode = "404", description = "Apartamento no encontrado"),
-            @ApiResponse(responseCode = "409", description = "El apartamento tiene historial de ocupación o cuotas; no se elimina",
+            @ApiResponse(responseCode = "409", description = "El apartamento tiene historial de ocupación, cuotas o incidencias de mantenimiento; no se elimina",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @DeleteMapping("/{id}")
@@ -154,7 +154,8 @@ public class ApartamentoController {
         for (Throwable causa = error; causa != null; causa = causa.getCause()) {
             if (causa instanceof ConstraintViolationException violacion
                     && ("fk_ocupaciones_apartamento".equalsIgnoreCase(violacion.getConstraintName())
-                    || "fk_cuotas_apartamento".equalsIgnoreCase(violacion.getConstraintName()))) {
+                    || "fk_cuotas_apartamento".equalsIgnoreCase(violacion.getConstraintName())
+                    || "fk_incidencias_apartamento".equalsIgnoreCase(violacion.getConstraintName()))) {
                 String sqlState = violacion.getSQLState();
                 int codigo = violacion.getErrorCode();
                 // MySQL: fila padre referenciada (1451); H2: hay filas hijas (23503).
